@@ -80,7 +80,9 @@ void Player::on_gcode_received(void *argument) {
             gcode->mark_as_taken();
             if (this->current_file_handler != NULL) {
                 this->playing_file = true;
-                // this would be a problem if the stream goes away before the file has finished, so we attach it to the kernel stream
+                // this would be a problem if the stream goes away before the file has finished,
+                // so we attach it to the kernel stream, however network connections from pronterface
+                // do not connect to the kernel streams so won't see this FIXME
                 this->reply_stream= THEKERNEL->streams;
             }
 
