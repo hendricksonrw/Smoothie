@@ -102,17 +102,19 @@ static void connections(char *str, Shell *sh)
     sh->output("Current connections: \n");
 
     for (connr = &uip_conns[0]; connr <= &uip_conns[UIP_CONNS - 1]; ++connr) {
-        snprintf(istr, sizeof(istr), "%d, %u.%u.%u.%u:%u, %s, %u, %u, %c %c\n",
-                 HTONS(connr->lport),
-                 uip_ipaddr1(connr->ripaddr), uip_ipaddr2(connr->ripaddr),  uip_ipaddr3(connr->ripaddr), uip_ipaddr4(connr->ripaddr),
-                 HTONS(connr->rport),
-                 states[connr->tcpstateflags & UIP_TS_MASK],
-                 connr->nrtx,
-                 connr->timer,
-                 (uip_outstanding(connr)) ? '*' : ' ',
-                 (uip_stopped(connr)) ? '!' : ' ');
+        if(connr->tcpstateflags != UIP_CLOSED) {
+            snprintf(istr, sizeof(istr), "%d, %u.%u.%u.%u:%u, %s, %u, %u, %c %c\n",
+                     HTONS(connr->lport),
+                     uip_ipaddr1(connr->ripaddr), uip_ipaddr2(connr->ripaddr),  uip_ipaddr3(connr->ripaddr), uip_ipaddr4(connr->ripaddr),
+                     HTONS(connr->rport),
+                     states[connr->tcpstateflags & UIP_TS_MASK],
+                     connr->nrtx,
+                     connr->timer,
+                     (uip_outstanding(connr)) ? '*' : ' ',
+                     (uip_stopped(connr)) ? '!' : ' ');
 
-        sh->output(istr);
+            sh->output(istr);
+        }
     }
 }
 

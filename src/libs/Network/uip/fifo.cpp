@@ -2,19 +2,37 @@
 #include "fifo.h"
 #include "c-fifo.h"
 
-static Fifo<char *> fifo;
-
-char *fifo_pop()
+void *new_fifo()
 {
-    return fifo.pop();
+    return new Fifo<char*>;
 }
 
-void fifo_push(char *str)
+void delete_fifo(void *fifo)
 {
-    fifo.push(str);
+    Fifo<char *> *f= static_cast<Fifo<char *> *>(fifo);
+    while(f->size() > 0) {
+        char *s= f->pop();
+        if (s != NULL) {
+            free(s);
+        }
+    }
+    delete f;
 }
 
-int fifo_size()
+char *fifo_pop(void *fifo)
 {
-    return fifo.size();
+    Fifo<char *> *f= static_cast<Fifo<char *> *>(fifo);
+    return f->pop();
+}
+
+void fifo_push(void *fifo, char *str)
+{
+    Fifo<char *> *f= static_cast<Fifo<char *> *>(fifo);
+    f->push(str);
+}
+
+int fifo_size(void *fifo)
+{
+    Fifo<char *> *f= static_cast<Fifo<char *> *>(fifo);
+    return f->size();
 }

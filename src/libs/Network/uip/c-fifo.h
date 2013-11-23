@@ -5,9 +5,11 @@
 extern "C" {
 #endif
 
-char *fifo_pop();
-void fifo_push(char *);
-int fifo_size();
+void *new_fifo();
+void delete_fifo(void *);
+char *fifo_pop(void *);
+void fifo_push(void *, char *);
+int fifo_size(void *);
 
 #ifdef __cplusplus
 }
