@@ -57,8 +57,9 @@ bool CommandQueue::pop()
 
     free(cmd);
     THEKERNEL->call_event(ON_CONSOLE_LINE_RECEIVED, &message );
-    message.stream->puts(NULL); // indicates command is done
+
     if(message.stream != null_stream) {
+        message.stream->puts(NULL); // indicates command is done
         // decrement usage count
         CallbackStream *s= static_cast<CallbackStream *>(message.stream);
         s->dec();

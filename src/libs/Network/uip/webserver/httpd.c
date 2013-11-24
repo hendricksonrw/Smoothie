@@ -3,8 +3,6 @@
 #pragma GCC diagnostic ignored "-Wcast-align"
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 
 /**
  * \addtogroup apps
@@ -99,75 +97,34 @@
 #define DEBUG_PRINTF printf
 //#define DEBUG_PRINTF(...)
 
-// Store references to valid httpd states here for callback use, we cannot
-// have more than UIP_CONNS active connections
-static uint16_t lut_id= 1;
-static uint16_t lut_ids[UIP_CONNS];
-static struct httpd_state *lut_states[UIP_CONNS];
-
-struct httpd_state *state_lut_find(void *state)
-{
-    uint16_t sid= (uint16_t)state;
-    int i;
-    for (i = 0; i < UIP_CONNS; ++i) {
-        if(lut_ids[i] == sid) {
-            return lut_states[i];
-        }
-    }
-    return NULL;
-}
-void *state_lut_add(struct httpd_state *s)
-{
-    int i;
-    for (i = 0; i < UIP_CONNS; ++i) {
-        // find first unused one
-        if(lut_ids[i] == 0) {
-            void *lid= (void *)lut_id;
-            lut_ids[i]= lut_id;
-            lut_states[i]= s;
-            // next new unique lut id must not be 0
-            if(++lut_id == 0) lut_id= 1;
-            return lid;
-       }
-   }
-   DEBUG_PRINTF("ERROR too many entried for state lut\n");
-   return NULL;
-}
-void state_lut_delete(void *state)
-{
-    uint16_t i= (uint16_t)state;
-    lut_ids[i]= 0;
-    lut_states[i]= NULL;
-}
 
 // this callback gets the results of a command, line by line. need to check if
 // we need to stall the upstream sender return 0 if stalled 1 if ok to keep
 // providing more -1 if the connection has closed or is not in output state.
 // need to see which connection to send to based on state and add result to
-// that fifo for each connection. NOTE that as connections can be closed at
-// any time it is possible that the httpd_state has already been deleted, so
-// we need to keep a list of valid active states that have unique ids so that
-// we see if it is still valid or not. We cannot just use the address of the
-// state as it could have been reused by a new connection in the interim.
+// that fifo for each connection. NOTE this will not get called if the
+// connection has been closed and the stream will get deleted when the last
+// command has been executed
 static int command_result(const char *str, void *state)
 {
-    struct httpd_state *s= state_lut_find(state);
+    struct httpd_state *s= (struct httpd_state *)state;
     if(s == NULL) {
-        DEBUG_PRINTF("command result for closed state %d\n", (int)state);
-        // connection was closed so discard
+        // connection was closed so discard, this should never happen
+        DEBUG_PRINTF("ERROR: command result for closed state %d\n", (int)state);
         return -1;
     }
 
     if(str == NULL) {
-        DEBUG_PRINTF("End of command (%d)\n", (int)state);
+        DEBUG_PRINTF("End of command (%p)\n", state);
         fifo_push(s->fifo, NULL);
 
     }else{
-        DEBUG_PRINTF("Got command result (%d): %s", (int)state, str);
         if(fifo_size(s->fifo) < 10) {
+            DEBUG_PRINTF("Got command result (%p): %s", state, str);
             fifo_push(s->fifo, strdup(str));
             return 1;
         }else{
+            DEBUG_PRINTF("command result fifo is full (%p)\n", state);
             return 0;
         }
     }
@@ -177,12 +134,9 @@ static int command_result(const char *str, void *state)
 static void create_callback_stream(struct httpd_state *s)
 {
     // need to create a callback stream here, but do one per connection pass
-    // the state to the callback, we also create an entry in the state_lut so
-    // we can track if this state has been closed or not. We pass the unique
-    // id of the state_lut to the callback stream so we can look it up later.
-    void *lid= state_lut_add(s);
-    s->lutid= (uint16_t)lid;
-    s->pstream= new_callback_stream(command_result, lid);
+    // the state to the callback, also create the fifo for the command results
+    s->fifo= new_fifo();
+    s->pstream= new_callback_stream(command_result, s);
 }
 
 // Used to save files to SDCARD during upload
@@ -368,6 +322,9 @@ PT_THREAD(handle_output(struct httpd_state *s))
 
     if(s->method == POST && strcmp(s->filename, "/command") == 0) {
         DEBUG_PRINTF("Executing command post: %s\n", s->command);
+        // create a callback stream and fifo for the results
+        create_callback_stream(s);
+
         // stick the command  on the command queue, with this connections stream output
         network_add_command(s->command, s->pstream);
 
@@ -644,8 +601,8 @@ httpd_appcall(void)
         s->timer = 0;
         s->fd= NULL;
         s->strbuf= NULL;
-        s->fifo= new_fifo();
-        create_callback_stream(s);
+        s->fifo= NULL;
+        s->pstream= NULL;
     }
 
     if(s == NULL) {
@@ -669,9 +626,11 @@ httpd_appcall(void)
         DEBUG_PRINTF("Closing connection: %d\n", HTONS(uip_conn->rport));
         if(s->fd != NULL) fclose(fd); // clean up
         if(s->strbuf != NULL) free(s->strbuf);
-        delete_fifo(s->fifo);
-        delete_callback_stream(s->pstream);
-        state_lut_delete((void*)s->lutid);
+        if(s->pstream != NULL) {
+            // free these if they were allocated
+            delete_fifo(s->fifo);
+            delete_callback_stream(s->pstream); // this will mark it as closed and will get deleted when no longer needed
+        }
         free(s) ;
         uip_conn->appstate = NULL;
 
@@ -689,11 +648,7 @@ httpd_appcall(void)
  */
 void httpd_init(void)
 {
-    int i;
     uip_listen(HTONS(80));
-    for (i = 0; i < UIP_CONNS; ++i) {
-        lut_ids[i]= 0;
-    }
 }
 /*---------------------------------------------------------------------------*/
 /** @} */

@@ -55,7 +55,6 @@ struct httpd_state {
   char *strbuf;
   int content_length;
   uint16_t count;
-  uint16_t lutid;
   uint8_t uploadok;
   uint8_t upload_state;
   uint8_t cache_page;
