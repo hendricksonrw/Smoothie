@@ -35,17 +35,17 @@ div.toolbar > div {
 	float: left;
 	background-color: #DDD;
 	padding: 0.5em 1em;
-	border: 3px outset grey;
+	border: 1px outset grey;
 	cursor: pointer;
-	border-top-left-radius: 1em;
-	border-top-right-radius: 1em;
+	border-top-left-radius: 0.5em;
+	border-top-right-radius: 0.5em;
 	border-bottom: 1px solid grey;
 	z-index: 100;
 }
 
 .tabbutton.current {
 	background-color: #EEF;
-	border: 3px inset grey;
+	border: 1px inset grey;
 	border-bottom: 1px solid white;
 }
 

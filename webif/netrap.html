@@ -35,7 +35,7 @@
 			<br>
 			<input type="submit" value="Add" id="submit_addprinter">
 		</form>
-		<div class="toolbar">
+		<div class="toolbar" style="display: none;" >
 			<div class="printerbar" id="printerbar"><input type="button" id="refreshPrinters" value="R" /><input type="button" id="button_addPrinter" value="+" /></div><br />
 			<div style="overflow: visible; white-space: nowrap;" id="printername"></div><br style="clear: right;" />
 			<div><input type="checkbox" id="monitor" /><span label="monitor">Monitor Printer</span></div>
@@ -48,7 +48,6 @@
 		<div class="tabs" id="tabbar">
 			<div class="tabbutton" id="PrinterTabButton">Printer</div>
 			<div class="tabbutton" id="FilesTabButton">Files</div>
-			<div class="tabbutton" id="SliceTabButton">Slice</div>
 		</div>
 		<br class="clear" />
 		<div class="tabcontent" id="PrinterTab" name="Printer">
@@ -56,10 +55,15 @@
 				<tr><td>
 					<canvas id="jogXYCanvas" width="247" height="242" style="width: 247px; height: 242px; background-image: url('images/control_xy.png'); background-repeat: none; float:left;"></canvas>
 				</td><td>
-					<canvas id="jogZCanvas" width="59" height="242" style="width: 59px; height: 242px; background-image: url('images/control_z.png'); background-repeat: none; float:left;"></canvas>
+					<canvas id="jogZCanvas" width="59" height="242" style="width: 58px; height: 242px; background-image: url('images/control_z.png'); background-repeat: none; float:left;"></canvas>
 				</td><td>
-					<canvas id="jogECanvas" width="59" height="242" style="width: 59px; height: 242px; background-image: url('images/control_e.png'); background-repeat: none; float:left;"></canvas>
+					<canvas id="jogECanvas" width="59" height="242" style="width: 58px; height: 242px; background-image: url('images/control_e.png'); background-repeat: none; float:left;"></canvas>
 				</td><td>
+					<canvas id="extruderTempCanvas" width="59" height="242" style="width: 58px; height: 242px; background-image: url('images/control_e.png'); background-repeat: none; float:left;"></canvas>
+				</td><td>
+					<canvas id="bedTempCanvas" width="59" height="242" style="width: 58px; height: 242px; background-image: url('images/control_e.png'); background-repeat: none; float:left;"></canvas>
+				</td><td>
+
 					<textarea id="log" rows="16" cols="40" readonly="readonly"></textarea><br />
 					<form id="manual_entry">
 						<input type="text" id="send" style="width: 80%; float: left;" />
@@ -74,8 +78,8 @@
 			<input type="file" id="fileupload" multiple="multiple" />
 			<ul class="FileList" id="FileList"></ul>
 		</div>
-		<div class="tabcontent" id="SliceTab" name="Slice">
-			<em>Not implemented yet</em>
+		<div class="tabcontent" id="SliceTab" name="Slice" style="display: none;">
+			<em></em>
 		</div>
 
 		<script type="text/javascript">
@@ -227,7 +231,7 @@
 // 					for (var i = 0; i < printerdivs.length; i++) {
 // 						$('printerbar').removeChild(printerdivs[i]);
 // 					}
-					netrap.refreshPrinterList(callback_printersList);
+					//netrap.refreshPrinterList(callback_printersList);
 				}
 
 				function callback_printerclick() {

@@ -2,7 +2,7 @@ function netrapUplink(jsonuri) {
 	var self = this;
 
 	this.jsonuri = jsonuri;
-
+	this.baseuri = "command";
 	this.printers = [ 'default' ];
 	this.currentPrinter = 'default';
 	this.files = [];
@@ -39,6 +39,8 @@ function netrapUplink(jsonuri) {
 }
 
 netrapUplink.prototype = {
+
+
 	sendCmd: function(cmd) {
 		this.queueCmd(cmd);
 		this.queueCommit();
@@ -49,7 +51,7 @@ netrapUplink.prototype = {
 	queueCommit: function() {
 		var self = this;
 		try {
-			var r = new Ajax.Request("json/printer-query?printer=" + self.currentPrinter, {
+			var r = new Ajax.Request(self.baseuri, {
 				contentType: "text/plain",
 				parameters: this.queue.join("\n") + "\n",
 				onSuccess: function (response) {
@@ -62,10 +64,11 @@ netrapUplink.prototype = {
 	},
 	query: function(query) {
 		var self = this;
-		var r = new Ajax.Request("json/printer-query?printer=" + self.currentPrinter, {
+		var r = new Ajax.Request(self.baseuri, {
 			contentType: "text/plain",
 			parameters: query + "\n",
 			onSuccess: function (response) {
+				self.addMessageToLog("GOT A QUERY RESPONSE")
 				try {
 					var responseText = response.responseText;
 					var replies = response.responseText.split("\n");
@@ -91,47 +94,32 @@ netrapUplink.prototype = {
 				}
 			},
 			onFailure: function (response) {
-				// 				alert('AJAX: Failure: ' + response);
+				var message = "Query Command Failed";
+				self.addMessageToLog(message);
 			},
 		});
 	},
-	refreshPrinterList: function(callback) {
-		// TODO: json: listPrinters
-// 		this.sendCmd("TODO: listPrinters");
-		var self = this;
-		var r = new Ajax.Request("json/printer-list", {
-			onSuccess: function (response) {
-				try {
-					var json = response.responseText.evalJSON(true);
-				} catch (e) {
-					alert(e);
-				}
-				// 				alert('AJAX: Success: ' + response);
-				if (json) {
-					if (json.printers && json.printers.length >= 0) {
-						self.printers = json.printers;
-// 						for (var i = 0; i < json.printers.length; i++) {
-// 							var printer = json.printers[i];
-// 							if (printer) {
-								if (callback) {
-									callback(self.printers);
-								}
-// 							}
-// 						}
-					}
-				}
-			},
-			onFailure: function (response) {
-				// 				alert('AJAX: Failure: ' + response);
-			},
-		});
+
+	addMessageToLog: function(message) {
+		$('log').value += "< " + message + "\n";
+		$('log').scrollTop = $('log').scrollHeight;
 	},
+		
+
 	refreshFileList: function(callback_FileList) {
 		var self = this;
-		var r = new Ajax.Request("json/file-list", {
+		var r = new Ajax.Request(self.baseuri, {
+			// Need to parse the response from the M20 command
+			contentType: "text/plain",
+			parameters: "M20\n",
+
 			onSuccess: function (response) {
-				try {
+							try {
 					var json = response.responseText.evalJSON(true);
+					var responseText = response.responseText;
+					var replies = response.responseText.split("\n");
+					self.addMessageToLog("REFRESH LIST")
+					//TODO:parse out the file list
 				} catch (e) {
 					alert(e);
 				}
@@ -149,7 +137,8 @@ netrapUplink.prototype = {
 				}
 			},
 			onFailure: function (response) {
-				alert('AJAX: Failure: ' + response);
+				var message = "Refresh File List Command Failed";
+				self.addMessageToLog(message);
 			}
 		});
 	},
