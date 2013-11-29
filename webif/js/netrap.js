@@ -56,6 +56,11 @@ netrapUplink.prototype = {
 				parameters: this.queue.join("\n") + "\n",
 				onSuccess: function (response) {
 				},
+				onFailure: function (response) {
+				var message = "Queue Command Failed";
+				self.addMessageToLog(message);
+			},
+
 			});
 		} catch (e) {
 			alert(e);
